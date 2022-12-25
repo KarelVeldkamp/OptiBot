@@ -1,0 +1,5 @@
+openai
+pyyaml
+tweepy
+requests
+bs4
