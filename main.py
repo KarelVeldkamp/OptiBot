@@ -1,8 +1,8 @@
 import yaml
 import tweepy
 import openai
-import requests
-from bs4 import BeautifulSoup
+from newsapi.newsapi_client import NewsApiClient
+import datetime
 
 
 class OptiBot():
@@ -10,8 +10,11 @@ class OptiBot():
 
         self.news_url = news_url
 
+        # initialize newsapi client
+        self.news_client = NewsApiClient(api_key=creds['newsapi']['key'])
+
         # initialize twitter client
-        self.client = tweepy.Client(
+        self.twitter_client = tweepy.Client(
             consumer_key=creds['twitter']['key'],
             consumer_secret=creds['twitter']['secret'],
             access_token=creds['twitter']['access_token'],
@@ -22,19 +25,22 @@ class OptiBot():
         openai.organization = creds['openai']['organization']
         openai.api_key = creds['openai']['api_key']
 
-    def read_headlines(self):
+    def read_headlines(self, n):
         """
         reads headlines from the website provided when initalizing the model
         :return: a list of headlines
         """
-        # scrape headlines from the url
-        response = requests.get(self.news_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        elements = soup.find('body').find_all('h3')
-        # add text to list
-        headlines = []
-        for e in elements:
-            headlines.append(e.text)
+        now = datetime.datetime.now()
+        today = str(now.date())
+
+        articles = self.news_client.get_everything(sources='bbc-news',
+                                          from_param=today,
+                                          to=today,
+                                          language='en',
+                                          sort_by='relevancy',
+                                          page=1)['articles']
+
+        headlines = [a['title'] for a in articles]
 
         return headlines
 
@@ -56,13 +62,12 @@ class OptiBot():
                 engine="text-davinci-003",
                 prompt=prompt,
                 temperature=0.8,
-                max_tokens=100,
+                max_tokens=90,
                 n = 1
             )
             text = response['choices'][0]['text']
             nchar = len(text)
 
-        print(text)
         return text
 
     def tweet(self, text):
@@ -70,15 +75,15 @@ class OptiBot():
         posts a tweet to Twitter.
         :param text: text to post
         """
-        self.client.create_tweet(text=text)
+        self.twitter_client.create_tweet(text=text)
 
 
 if __name__ == "__main__":
     with open("./credentials.yml", "r") as f:
         creds = yaml.safe_load(f)
 
-    bot = OptiBot('https://www.bbc.com/news/world', creds)
+    bot = OptiBot('https://en.wikinews.org/wiki/Main_Page', creds)
 
-    headlines = bot.read_headlines()
+    headlines = bot.read_headlines(25)
     generated_tweet = bot.generate_tweet(headlines)
     bot.tweet(generated_tweet)

@@ -1,5 +1,4 @@
 openai
 pyyaml
 tweepy
-requests
-bs4
+newsapi-python
