@@ -40,7 +40,7 @@ class OptiBot():
                                           sort_by='relevancy',
                                           page=1)['articles']
 
-        headlines = [a['title'] for a in articles]
+        headlines = [a['title'] for a in articles][:n]
 
         return headlines
 
@@ -85,5 +85,7 @@ if __name__ == "__main__":
     bot = OptiBot('https://en.wikinews.org/wiki/Main_Page', creds)
 
     headlines = bot.read_headlines(25)
+    print(headlines)
     generated_tweet = bot.generate_tweet(headlines)
+    print(generated_tweet)
     bot.tweet(generated_tweet)
