@@ -137,4 +137,5 @@ if __name__ == "__main__":
     id = bot.tweet(generated_tweet)
     for url in urls:
         time.sleep(10)
+        reply = '@Opti_News_Bot' + url
         bot.tweet(url, id)
